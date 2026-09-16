@@ -1,0 +1,29 @@
+create recursive directory reader
+create string parser
+create argument parser
+
+I have decided to pivot into just making a recursive wrapper for any arbitrary command. This is something I would have to build for prototyping anyway, but would be much more useful than the mono-focused LAMEr. The new name I have for this program is rECR or (rECR executes commands recursively).
+
+The user will supply the full command they want to run on each program as a string in one of the arguments. The string will be written the same that the command would be except with a "FILE.PATH0" in place of where the specified file would normally be and FILE.NAME0 in place of its name. 
+
+For example the rm command would be written as "rm -f FILE.PATH0/FILE.NAME0". 
+
+In the case of commands that take multiple file paths the user should iterate to FILE.PATH1, FILE.PATH2, and so on. 
+
+For example the mv command would be written as "mv -v FILE.PATH0/FILE.NAME0 FILE.PATH1/FILE.NAME1" or "mv -v FILE.PATH0/FILE.NAME0 FILE.PATH1/FILE.NAME0" if they want the new files to have the same name as the original.
+
+within the rECR command the PATH0 and NAME0 should be defined as strings like [PATH0=""] this should work with wildcard characters so the user can specify a specific file type like [NAME0="*.png"]
+
+Obviously both rm and mv have recursive arguments, but they are common commands with a familiar structure.
+
+An example of how the rECR would be laid out, subject to change.
+rECR [OPTIONS] [COMMAND STRING] [path to directory] PATH0="" NAME0=""
+
+
+rECR will then show affected files and the number of them, give a quick warning about the danger of bulk commands, and then ask for confirmation before executing.
+
+This is a command line program and following the Linux ethos that a user should is responsible for what they do to their system, however they should still be made aware of danger. "rm -rf /" exists on the same system.
+
+Other options allow the user to select folder depth (DEPTH=<int>, a DEPTH of 0 will just run the program for every file in the current directory without going into sub-directories) and ignore the warning (-f).
+
+rECR will not correct for the errors of the other commands it runs. Each program has it's own error reporting that will just be printed to the terminal.
