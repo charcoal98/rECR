@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
 
         for(auto iterEntry = fs::recursive_directory_iterator(filepathT); iterEntry != fs::recursive_directory_iterator(); ++iterEntry ) {
             const string filenameStr = iterEntry->path().filename().string();
-            /*Node* file;
+            Node* file;
             bool isDir = false;
             if (iterEntry->is_directory()) {
                 isDir = true;
@@ -99,14 +99,14 @@ int main(int argc, char* argv[]) {
             } else if (prevDepth < iterEntry.depth()){//Going down
                 file = new Node(filenameStr, isDir);
                 addChild(prevDir, file);
-                currentDir = file;
+                currentDir = prevDir;
             }else{//pure horizontal
                 file = new Node(filenameStr, isDir);
                 addChild(currentDir, file);
             }
             prevDir = file;
-            cout << "(file: " << file->data << "),(prevDir: "<<prevDir->data<<"),(currentDir: "<<currentDir->data<<")";*/
-            cout << setw(iterEntry.depth()*3) << "";
+            cout << "(file: " << file->data << "),(prevDir: "<<prevDir->data<<"),(currentDir: "<<currentDir->data<<")";
+            /*cout << setw(iterEntry.depth()*3) << "";
             if (iterEntry->is_directory()) {
                 cout << "dir:  " << filenameStr;
             }
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
                 cout << "file: " << filenameStr;
             }
             else
-                cout << "??    " << filenameStr;
+                cout << "??    " << filenameStr;*/
             cout << endl;
             prevDepth = iterEntry.depth();
         }
