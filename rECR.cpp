@@ -10,60 +10,39 @@ namespace fs = filesystem;
 class Node {
 public:
     string data;
-    Node* par;
+    Node* parent;
     bool directoryflag;
     vector<Node*> children;
 
     Node(string path) {
         data = path;
-        par = nullptr;
+        this->parent = nullptr;
         directoryflag = false;
     }
 
     Node(string path, bool isDir) {
         data = path;
-        par = nullptr;
+        this->parent = nullptr;
         directoryflag = isDir;
+    }
+};
+
+class ArgValue {
+    string index;
+    string value;
+
+    ArgValue(string index, string name){
+        this->index = index;
+        this->value = value;
     }
 };
 
 // Function to add a child to a node
 void addChild(Node* parent, Node* child) {
     parent->children.push_back(child);
-    child->par = parent;
-    cout << parent->data << " : ";
-    cout << child->data;
-}
-
-void printParents(Node* node, Node* parent) {
-    if (parent == nullptr)
-        cout << node->data << " -> NULL" << endl;
-    else
-        cout << node->data << " -> " << parent->data << endl;
-
-    for (auto child : node->children)
-        printParents(child, node);
-}
-
-// Function to print children of each node
-void printChildren(Node* node) {
-    cout << node->data << " -> ";
-    for (auto child : node->children)
-        cout << child->data << " ";
-    cout << endl;
-
-    for (auto child : node->children)
-        printChildren(child);
-}
-
-// Function to print leaf nodes
-void printLeafNodes(Node* node) {
-    if (node->children.empty()) {
-        cout << node->data << " ";
-        return;
-    }
-    for (auto child : node->children)
-        printLeafNodes(child);
+    child->parent = parent;
+    /*cout << parent->data << " : ";
+    cout << child->data;*/
 }
 
 // Function to print degrees of each node 
@@ -77,60 +56,96 @@ void printDegrees(Node* node, Node* parent) {
         printDegrees(child, node);
 }
 
-int main(int argc, char* argv[]) {
-    try {
-        const fs::path filepathT{ argc >= 2 ? argv[1] : fs::current_path() };
-        Node* root = new Node(filepathT.string());
-        Node* currentDir = root;
-        Node* prevDir = nullptr;
-        int prevDepth = 0;
-
-        for(auto iterEntry = fs::recursive_directory_iterator(filepathT); iterEntry != fs::recursive_directory_iterator(); ++iterEntry ) {
-            const string filenameStr = iterEntry->path().filename().string();
-            Node* file;
-            bool isDir = false;
-            if (iterEntry->is_directory()) {
-                isDir = true;
+void readDirectory(fs::path filepathT, string Filter, bool IgnoreHidden){
+    Node* root = new Node(filepathT.string());
+    Node* currentDir = root;
+    Node* prevDir = nullptr;
+    int totalFiles = 0;
+    int prevDepth = 0;
+    for(auto iterEntry = fs::recursive_directory_iterator(filepathT); iterEntry != fs::recursive_directory_iterator(); ++iterEntry ) {
+        const string filenameStr = iterEntry->path().filename().string();
+        //skip if dot file
+        if(IgnoreHidden){
+            if(filenameStr.at(0) == '.'){
+                continue;
             }
-            if (prevDepth > iterEntry.depth()){//Going up
-                file = new Node(filenameStr, isDir);
-                currentDir = currentDir->par;
-                addChild(currentDir, file);
-            } else if (prevDepth < iterEntry.depth()){//Going down
-                file = new Node(filenameStr, isDir);
-                addChild(prevDir, file);
-                currentDir = prevDir;
-            }else{//pure horizontal
-                file = new Node(filenameStr, isDir);
-                addChild(currentDir, file);
-            }
-            prevDir = file;
-            cout << "(file: " << file->data << "),(prevDir: "<<prevDir->data<<"),(currentDir: "<<currentDir->data<<")";
-            /*cout << setw(iterEntry.depth()*3) << "";
-            if (iterEntry->is_directory()) {
-                cout << "dir:  " << filenameStr;
-            }
-            else if (iterEntry->is_regular_file()) {
-                cout << "file: " << filenameStr;
-            }
-            else
-                cout << "??    " << filenameStr;*/
-            cout << endl;
-            prevDepth = iterEntry.depth();
         }
 
-        /*cout << "Parents of each node:" << endl;
-        printParents(root, nullptr);
+        Node* file;
+        bool isDir = false;
+        //check if directory for tree
+        if (iterEntry->is_directory()) {
+            isDir = true;
+        }
 
-        cout << "Children of each node:" << endl;
-        printChildren(root);
+        //build tree
+        if (prevDepth > iterEntry.depth()){//Going up
+            file = new Node(filenameStr, isDir);
+            currentDir = currentDir->parent;
+            addChild(currentDir, file);
+        } else if (prevDepth < iterEntry.depth()){//Going down
+            file = new Node(filenameStr, isDir);
+            addChild(prevDir, file);
+            currentDir = prevDir;
+        }else{//pure horizontal
+            file = new Node(filenameStr, isDir);
+            addChild(currentDir, file);
+        }
+        prevDir = file;
 
-        cout << "Leaf nodes: ";
-        printLeafNodes(root);
+        //cout << "(file: " << file->data << "),(prevDir: "<<prevDir->data<<"),(currentDir: "<<currentDir->data<<")";
+
+        cout << setw(iterEntry.depth()*3) << "";
+        if (iterEntry->is_directory()) {
+            cout << "dir:  " << filenameStr;
+        }
+        else if (iterEntry->is_regular_file()) {
+            cout << "file: " << filenameStr;
+        }
+        else
+            cout << "??    " << filenameStr;
         cout << endl;
+        prevDepth = iterEntry.depth();
+        totalFiles++;
+    }
+    cout << "Total Files to Be Affected: " << totalFiles << endl;
+}
 
-        cout << "Degrees of nodes:" << endl;
-        printDegrees(root, nullptr);*/
+int main(int argc, char* argv[]) {
+    try {
+        vector<char> options;
+        vector<ArgValue> nameFilters;
+        vector<ArgValue> pathFilters;
+
+        //Sort Arguments
+        for (int i = 0; i < argc; ++i){
+            string arg(argv[i]);
+            cout << argv[i] << endl;
+        }
+        cout << "\n\n";
+
+
+        int iterator = 1;
+        string arg(argv[iterator]);
+        //read options. If options move iterator otherwise first arg is command string
+        if (arg.at(0) == '-'){
+            //read options
+            iterator++;
+        }
+
+        //Sort Args between names and paths
+        string commandString(argv[iterator]); iterator++;
+        for (int i = iterator; i < argc; ++i){
+            string arg(argv[i]);
+            if (arg.substr(0,4).compare("PATH") == 0){
+                cout << argv[i] << " < Path\n"; ///START HERE
+            }
+            if (arg.substr(0,4).compare("NAME") == 0){
+                cout << argv[i] << " < Name\n";
+            }
+        }
+        /*const fs::path filepathT{ argc >= 2 ? argv[1] : fs::current_path() };
+        readDirectory(filepathT, "",true);*/
     }
     catch (const fs::filesystem_error& err) {
         cerr << "filesystem error! " << err.what() << endl;
