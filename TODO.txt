@@ -34,5 +34,6 @@ using the wildcard in the NAME1 or greater will append NAME1 to NAME0 ignoring f
 EXAMPLE: NAME1="Moved*" NAME0="*.txt" output will be Moved<name of file>.txt, if NAME0="*" then output will be Moved<name of file>.<fileExtention>
 NAME1=""
 
+./rECR -r "mv -v FILE.PATH0/FILE.NAME0 FILE.PATH1/FILE.NAME1" Test\ Dir/ NAME0="*.txt" PATH1="../" NAME1="moved*"
 
 if arg starts with - its an option

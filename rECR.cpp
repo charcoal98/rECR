@@ -8,33 +8,43 @@ using namespace std;
 namespace fs = filesystem;
 
 class Node {
-public:
-    string data;
-    Node* parent;
-    bool directoryflag;
-    vector<Node*> children;
+    public:
+        string data;
+        Node* parent;
+        bool directoryflag;
+        vector<Node*> children;
 
-    Node(string path) {
-        data = path;
-        this->parent = nullptr;
-        directoryflag = false;
-    }
+        Node(string path) {
+            data = path;
+            this->parent = nullptr;
+            directoryflag = false;
+        }
 
-    Node(string path, bool isDir) {
-        data = path;
-        this->parent = nullptr;
-        directoryflag = isDir;
-    }
+        Node(string path, bool isDir) {
+            data = path;
+            this->parent = nullptr;
+            directoryflag = isDir;
+        }
 };
 
 class ArgValue {
-    string index;
-    string value;
+    public:
+        string index;
+        string value;
 
-    ArgValue(string index, string name){
-        this->index = index;
-        this->value = value;
-    }
+        ArgValue(){
+            this->index = "";
+            this->value = "";
+        }
+
+        ArgValue(string index, string value){
+            this->index = index;
+            this->value = value;
+        }
+
+        void printOut(){
+            cout << "Value: " << value << "  Index: " << index << endl;
+        }
 };
 
 // Function to add a child to a node
@@ -45,18 +55,8 @@ void addChild(Node* parent, Node* child) {
     cout << child->data;*/
 }
 
-// Function to print degrees of each node 
-void printDegrees(Node* node, Node* parent) {
-    int degree = node->children.size();
-    if (parent != nullptr)  
-        degree++;
-    cout << node->data << " -> " << degree << endl;
-
-    for (auto child : node->children)
-        printDegrees(child, node);
-}
-
 void readDirectory(fs::path filepathT, string Filter, bool IgnoreHidden){
+    //const fs::path filepathT{ argc >= 2 ? argv[1] : fs::current_path() };
     Node* root = new Node(filepathT.string());
     Node* currentDir = root;
     Node* prevDir = nullptr;
@@ -111,11 +111,16 @@ void readDirectory(fs::path filepathT, string Filter, bool IgnoreHidden){
     cout << "Total Files to Be Affected: " << totalFiles << endl;
 }
 
+string parseValueFromArg(string& index, string input){
+    index = input.substr(0,5);
+    return input.substr(6,input.size());
+}
+
 int main(int argc, char* argv[]) {
     try {
         vector<char> options;
-        vector<ArgValue> nameFilters;
-        vector<ArgValue> pathFilters;
+        vector<ArgValue*> nameFilters;
+        vector<ArgValue*> pathFilters;
 
         //Sort Arguments
         for (int i = 0; i < argc; ++i){
@@ -133,16 +138,41 @@ int main(int argc, char* argv[]) {
             iterator++;
         }
 
-        //Sort Args between names and paths
+        
         string commandString(argv[iterator]); iterator++;
+
+        //check to see if path specifiyed
+        arg = argv[iterator];
+        arg = arg.substr(0,4);
+        fs::path workingPath = fs::current_path();
+
+        //if the next argument isn't a PATHx or NAMEx argument it must be the directory
+        //if not the workingPath is the current path
+        if (!(arg.compare("PATH") == 0) && !(arg.compare("NAME") == 0)){
+            arg = argv[iterator];
+            workingPath = arg; iterator++;
+        }
+
+        //Sort Args between names and paths
         for (int i = iterator; i < argc; ++i){
             string arg(argv[i]);
             if (arg.substr(0,4).compare("PATH") == 0){
-                cout << argv[i] << " < Path\n"; ///START HERE
+                string index, value;
+                value = parseValueFromArg(index, arg);
+                pathFilters.push_back(new ArgValue(index, value));
             }
             if (arg.substr(0,4).compare("NAME") == 0){
-                cout << argv[i] << " < Name\n";
+                string index, value;
+                value = parseValueFromArg(index, arg);
+                nameFilters.push_back(new ArgValue(index, value));
             }
+        }
+
+        for (ArgValue* temp : pathFilters){
+            temp->printOut();
+        }
+        for (ArgValue* temp : nameFilters){
+            temp->printOut();
         }
         /*const fs::path filepathT{ argc >= 2 ? argv[1] : fs::current_path() };
         readDirectory(filepathT, "",true);*/
@@ -158,3 +188,7 @@ int main(int argc, char* argv[]) {
         cerr << "general exception: " << ex.what() << endl;
     }
 }
+
+
+
+//Remember the replace() function for strings
