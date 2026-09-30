@@ -55,14 +55,46 @@ void addChild(Node* parent, Node* child) {
     cout << child->data;*/
 }
 
-void readDirectory(fs::path filepathT, string Filter, bool IgnoreHidden){
-    //const fs::path filepathT{ argc >= 2 ? argv[1] : fs::current_path() };
-    Node* root = new Node(filepathT.string());
+bool wildcardMatching(string txt, string pat){
+    int n = txt.size();
+    int m = pat.size();
+    int i = 0, j = 0, startIndex = -1, match = 0;
+    while (i < n) {
+        if (j < m && (pat[j] == '?' || pat[j] == txt[i])) {          
+            i++;
+            j++;
+        }
+        
+        else if (j < m && pat[j] == '*') {
+            startIndex = j;
+            match = i;
+            j++;
+        }
+      
+        else if (startIndex != -1) {
+            j = startIndex + 1;
+            match++;
+            i = match;
+        }
+        
+        else {
+            return false;
+        }
+    }
+    while (j < m && pat[j] == '*') {
+        j++;
+    }
+    return j == m;
+}
+
+void readDirectory(fs::path workingPath, string filter, bool IgnoreHidden){
+    Node* root = new Node(workingPath.string());
     Node* currentDir = root;
     Node* prevDir = nullptr;
+
     int totalFiles = 0;
     int prevDepth = 0;
-    for(auto iterEntry = fs::recursive_directory_iterator(filepathT); iterEntry != fs::recursive_directory_iterator(); ++iterEntry ) {
+    for(auto iterEntry = fs::recursive_directory_iterator(workingPath); iterEntry != fs::recursive_directory_iterator(); ++iterEntry ) {
         const string filenameStr = iterEntry->path().filename().string();
         //skip if dot file
         if(IgnoreHidden){
@@ -77,7 +109,9 @@ void readDirectory(fs::path filepathT, string Filter, bool IgnoreHidden){
         if (iterEntry->is_directory()) {
             isDir = true;
         }
-
+        if (!wildcardMatching(filenameStr, filter) && !isDir){
+            continue;
+        }
         //build tree
         if (prevDepth > iterEntry.depth()){//Going up
             file = new Node(filenameStr, isDir);
@@ -106,28 +140,104 @@ void readDirectory(fs::path filepathT, string Filter, bool IgnoreHidden){
             cout << "??    " << filenameStr;
         cout << endl;
         prevDepth = iterEntry.depth();
-        totalFiles++;
+        if (!isDir)
+            totalFiles++;
     }
     cout << "Total Files to Be Affected: " << totalFiles << endl;
 }
 
-string parseValueFromArg(string& index, string input){
-    index = input.substr(0,5);
-    return input.substr(6,input.size());
+ArgValue* parseValueFromArg(string argument){
+    string index = argument.substr(0,5);
+    string value = argument.substr(6,argument.size());
+    return new ArgValue(index, value);
 }
+
+string findAndReplace(string prime, string filter, string replacement){
+    int index = prime.find(filter);
+    int size = filter.size();
+
+    prime.replace(index, size, replacement);
+    return prime;
+}
+
+string formatCommandString(string prime, vector<ArgValue*> nameFilters, vector<ArgValue*> pathFilters){
+    string out = prime;
+    for (ArgValue* temp : pathFilters){
+            temp->printOut();
+        }
+    for (ArgValue* temp : nameFilters){
+        temp->printOut();
+    }
+    cout << "\n\n";
+
+
+    string nameFormat;
+
+    //this is sloppy but for somereason I can't get vector<>.insert() to work so I can't count on the vector to be sorted;
+    for (ArgValue* name : nameFilters){
+                 
+    }
+    for (ArgValue* name : nameFilters){
+        //can't get vector<>.erase() to work either so if name is NAME0 ignore it
+        if (name->index.compare("NAME0") == 0)
+            continue;
+        //format out
+    }
+    for (ArgValue* name : nameFilters){
+        //can't get vector<>.erase() to work either so if name is NAME0 ignore it
+        if (name->index.compare("NAME0") == 0)
+            continue;
+        cout << "here: ";
+        name->printOut();
+        out = findAndReplace(out, name->index, name->value);
+    }
+    
+    return out;
+}
+
+void StringSplitter(string& before, string& after, string original, string wildcard, bool include){
+        if (original.find(wildcard) != string::npos){
+            int index = original.find(wildcard);
+            before = original.substr(0, index);
+            if (include)
+                after = original.substr(index, original.size());
+            else
+                after = original.substr(index + 1, original.size());
+        }
+    }
+
+string wildcardHandling(string alpha, string beta){
+    int wildAlpha, dotBeta;
+    string beforeWildAlpha = "";
+    string afterWildAlpha = "";
+    string betaName = beta;
+    string betaExtention;
+    
+    StringSplitter(beforeWildAlpha, afterWildAlpha, alpha, "*", false);
+    StringSplitter(betaName, betaExtention, beta, ".", true);
+
+    string out = beforeWildAlpha + betaName + afterWildAlpha +  betaExtention;
+    return out;
+}
+
+
+
+
+
 
 int main(int argc, char* argv[]) {
     try {
         vector<char> options;
         vector<ArgValue*> nameFilters;
         vector<ArgValue*> pathFilters;
+        string filter = "*";
 
         //Sort Arguments
-        for (int i = 0; i < argc; ++i){
+        /*Display all args for testing purposes for (int i = 0; i < argc; ++i){
             string arg(argv[i]);
             cout << argv[i] << endl;
         }
-        cout << "\n\n";
+        cout << "\n\n";*/
 
 
         int iterator = 1;
@@ -138,7 +248,6 @@ int main(int argc, char* argv[]) {
             iterator++;
         }
 
-        
         string commandString(argv[iterator]); iterator++;
 
         //check to see if path specifiyed
@@ -157,25 +266,32 @@ int main(int argc, char* argv[]) {
         for (int i = iterator; i < argc; ++i){
             string arg(argv[i]);
             if (arg.substr(0,4).compare("PATH") == 0){
-                string index, value;
-                value = parseValueFromArg(index, arg);
-                pathFilters.push_back(new ArgValue(index, value));
+                ArgValue* path = parseValueFromArg(arg);
+                int i = stoi(path->index.substr(4, path->index.size()));
+                pathFilters.push_back(path);
             }
             if (arg.substr(0,4).compare("NAME") == 0){
-                string index, value;
-                value = parseValueFromArg(index, arg);
-                nameFilters.push_back(new ArgValue(index, value));
+                ArgValue* name = parseValueFromArg(arg);
+                if (name->index.compare("NAME0") == 0){
+                    filter = name->value;
+                    continue; 
+                }  
+                int i = stoi(name->index.substr(4, name->index.size()));
+                nameFilters.push_back(name);
+                //nameFilters.insert(&i, &name);
             }
         }
 
-        for (ArgValue* temp : pathFilters){
+        /*for (ArgValue* temp : pathFilters){
             temp->printOut();
         }
         for (ArgValue* temp : nameFilters){
             temp->printOut();
-        }
-        /*const fs::path filepathT{ argc >= 2 ? argv[1] : fs::current_path() };
-        readDirectory(filepathT, "",true);*/
+        }*/
+
+        //cout << formatCommandString(commandString, nameFilters, pathFilters) << endl;
+        //const fs::path workingPath{ argc >= 2 ? argv[1] : fs::current_path() };
+        readDirectory(workingPath, filter, true);
     }
     catch (const fs::filesystem_error& err) {
         cerr << "filesystem error! " << err.what() << endl;
