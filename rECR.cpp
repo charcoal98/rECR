@@ -278,7 +278,7 @@ int main(int argc, char* argv[]) {
                 }  
                 int i = stoi(name->index.substr(4, name->index.size()));
                 nameFilters.push_back(name);
-                //nameFilters.insert(&i, &name);
+                //nameFilters.insert(i, name);
             }
         }
 
