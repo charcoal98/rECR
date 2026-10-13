@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <bits/stdc++.h>
 
 using namespace std;
 namespace fs = filesystem;
@@ -160,7 +161,7 @@ string findAndReplace(string prime, string filter, string replacement){
     return prime;
 }
 
-string formatCommandString(string prime, vector<ArgValue*> nameFilters, vector<ArgValue*> pathFilters){
+string formatCommandString(string prime, vector<ArgValue*> nameFilters, vector<ArgValue*> pathFilters){////HERE
     string out = prime;
     for (ArgValue* temp : pathFilters){
             temp->printOut();
@@ -175,17 +176,7 @@ string formatCommandString(string prime, vector<ArgValue*> nameFilters, vector<A
 
     //this is sloppy but for somereason I can't get vector<>.insert() to work so I can't count on the vector to be sorted;
     for (ArgValue* name : nameFilters){
-                 
-    }
-    for (ArgValue* name : nameFilters){
-        //can't get vector<>.erase() to work either so if name is NAME0 ignore it
-        if (name->index.compare("NAME0") == 0)
-            continue;
-        //format out
-    }
-    for (ArgValue* name : nameFilters){
-        //can't get vector<>.erase() to work either so if name is NAME0 ignore it
-        if (name->index.compare("NAME0") == 0)
+        if (name->index == "Name0")
             continue;
         cout << "here: ";
         name->printOut();
@@ -257,7 +248,7 @@ int main(int argc, char* argv[]) {
 
         //if the next argument isn't a PATHx or NAMEx argument it must be the directory
         //if not the workingPath is the current path
-        if (!(arg.compare("PATH") == 0) && !(arg.compare("NAME") == 0)){
+        if (!(arg == "PATH") && !(arg == "NAME")){
             arg = argv[iterator];
             workingPath = arg; iterator++;
         }
@@ -265,14 +256,14 @@ int main(int argc, char* argv[]) {
         //Sort Args between names and paths
         for (int i = iterator; i < argc; ++i){
             string arg(argv[i]);
-            if (arg.substr(0,4).compare("PATH") == 0){
+            if (arg.substr(0,4) == "PATH"){
                 ArgValue* path = parseValueFromArg(arg);
                 int i = stoi(path->index.substr(4, path->index.size()));
                 pathFilters.push_back(path);
             }
-            if (arg.substr(0,4).compare("NAME") == 0){
+            if (arg.substr(0,4) == "NAME"){
                 ArgValue* name = parseValueFromArg(arg);
-                if (name->index.compare("NAME0") == 0){
+                if (name->index == "NAME0"){
                     filter = name->value;
                     continue; 
                 }  
@@ -281,17 +272,30 @@ int main(int argc, char* argv[]) {
                 //nameFilters.insert(i, name);
             }
         }
-
-        /*for (ArgValue* temp : pathFilters){
+        cout << "PATHS:\n";
+        for (ArgValue* temp : pathFilters){
             temp->printOut();
         }
+        cout << "NAMES:\n";
         for (ArgValue* temp : nameFilters){
             temp->printOut();
-        }*/
+        }
 
         //cout << formatCommandString(commandString, nameFilters, pathFilters) << endl;
         //const fs::path workingPath{ argc >= 2 ? argv[1] : fs::current_path() };
         readDirectory(workingPath, filter, true);
+        cout << "Would you like to run the command on all these files? y/n: ";
+        string yN;
+        cin >> yN;
+        cout << "\n";
+        transform(yN.begin(), yN.end(), yN.begin(), ::tolower);
+        if (!(yN == "y")){
+            cout << "Command Aborted" << endl;
+            return -1;
+        }
+        
+
+
     }
     catch (const fs::filesystem_error& err) {
         cerr << "filesystem error! " << err.what() << endl;
