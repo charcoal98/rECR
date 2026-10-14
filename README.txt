@@ -28,3 +28,5 @@ Using the wildcard in the NAME1 or greater will append NAME1 to the file's name 
     EXAMPLE: NAME1="Moved*" NAME0="*.txt" output will be Moved<name of file>.txt
 
 Included is a Test Dir to play around with instead of potentally ruining the rest of your file system.
+
+If you download the program off of github you can run it with "./rECR" or you can move it to /usr/local/bin to run it anywhere with "rECR"
