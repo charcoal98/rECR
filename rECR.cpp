@@ -3,12 +3,14 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <queue>
+#include <sys/stat.h>
 #include <bits/stdc++.h>
 
 using namespace std;
 namespace fs = filesystem;
 
-class Node {
+/*class Node {
     public:
         string name;
         string path;
@@ -35,6 +37,13 @@ class Node {
         }
 };
 
+// Function to add a child to a node
+void addChild(Node* parent, Node* child) {
+    parent->children.push_back(child);
+    child->parent = parent;
+
+}//*/
+
 class ArgValue {
     public:
         string index;
@@ -55,15 +64,16 @@ class ArgValue {
         }
 };
 
-// Function to add a child to a node
-void addChild(Node* parent, Node* child) {
-    parent->children.push_back(child);
-    child->parent = parent;
-    /*cout << parent->data << " : ";
-    cout << child->data;*/
+//See if directory exists if not create it
+void handleDirectory(string dir){
+    struct stat blank;
+    cout << "ran"<<endl;
+    if (!(stat(dir.c_str(), &blank) == 0)){
+        cout << "no dir"<<endl;
+        if (mkdir(dir.c_str(), 0777) == -1)
+            cerr << "Error :  " << strerror(errno) << endl;
+    }
 }
-
-
 
 bool wildcardMatching(string txt, string pat){
     int n = txt.size();
@@ -98,15 +108,16 @@ bool wildcardMatching(string txt, string pat){
 }
 
 void readDirectory(fs::path workingPath, string filter, bool IgnoreHidden){
-    Node* root = new Node("",workingPath.string());
+    /*Node* root = new Node("",workingPath.string());
     Node* currentDir = root;
-    Node* prevDir = nullptr;
+    Node* prevDir = nullptr;//*/
 
     int totalFiles = 0;
+    int totalDir = 0;
     int prevDepth = 0;
-    for(auto iterEntry = fs::recursive_directory_iterator(workingPath); iterEntry != fs::recursive_directory_iterator(); ++iterEntry ) {
-        const string filename = iterEntry->path().filename().string();
-        string filepath = iterEntry->path().string();
+    for(auto entry = fs::recursive_directory_iterator(workingPath); entry != fs::recursive_directory_iterator(); ++entry ) {
+        const string filename = entry->path().filename().string();
+        string filepath = entry->path().string();
         //edit name out of path
         filepath = filepath.substr(0,filepath.size() - filename.size());
 
@@ -117,21 +128,22 @@ void readDirectory(fs::path workingPath, string filter, bool IgnoreHidden){
             }
         }
 
-        Node* file;
+        //Node* file;
         bool isDir = false;
         //check if directory for tree
-        if (iterEntry->is_directory()) {
+        if (entry->is_directory()) {
             isDir = true;
+            totalDir++;
         }
         if (!wildcardMatching(filename, filter) && !isDir){
             continue;
         }
-        //build tree
-        if (prevDepth > iterEntry.depth()){//Going up
+        //build tree left over from before I just went throught the fs twice, Might revisit does have some efficency benifits
+        /*if (prevDepth > entry.depth()){//Going up
             file = new Node(filename, filepath, isDir);
             currentDir = currentDir->parent;
             addChild(currentDir, file);
-        } else if (prevDepth < iterEntry.depth()){//Going down
+        } else if (prevDepth < entry.depth()){//Going down
             file = new Node(filename, filepath, isDir);
             addChild(prevDir, file);
             currentDir = prevDir;
@@ -140,25 +152,27 @@ void readDirectory(fs::path workingPath, string filter, bool IgnoreHidden){
             addChild(currentDir, file);
         }
         prevDir = file;
+        file->PrintAll();//*/
 
-        file->PrintAll();
-
-        cout << setw(iterEntry.depth()*3) << "";
-        if (iterEntry->is_directory()) {
+        cout << setw(entry.depth()*3) << "";
+        if (entry->is_directory()) {
             cout << "dir:  " << filename;
         }
-        else if (iterEntry->is_regular_file()) {
+        else if (entry->is_regular_file()) {
             cout << "file: " << filename;
         }
         else
             cout << "??    " << filename;
         cout << endl;
-        prevDepth = iterEntry.depth();
+        prevDepth = entry.depth();
         if (!isDir)
             totalFiles++;
     }
+    cout << "Total Directories to Be Affected: " << totalDir << endl;
     cout << "Total Files to Be Affected: " << totalFiles << endl;
 }
+
+
 
 ArgValue* parseValueFromArg(string argument){
     string index = argument.substr(0,5);
@@ -195,48 +209,105 @@ string wildcardHandling(string alpha, string beta){
 string findAndReplace(string prime, string filter, string replacement){
     int index = prime.find(filter);
     int size = filter.size();
+    if (index == string::npos){
+        return prime;
+    }
     prime.replace(index, size, replacement);
 
+    //testing prints
     /*cout << "prime: " << prime << "| filter: " << filter<<endl;
-    cout << "index: " << index << "| size: " << size<<"| replacement: "<<replacement<<endl;*/
+    cout << "index: " << index << "| size: " << size<<"| replacement: "<<replacement<<endl;//*/
     return prime;
 }
 
-string formatCommandString(string prime, vector<ArgValue*> nameFilters, vector<ArgValue*> pathFilters, string filepath, string filename){////HERE
-    string out = prime;
-    /*for (ArgValue* temp : nameFilters){
-        temp->printOut();
-    }*/
+string handleSpaces(string alpha){
+    return findAndReplace(alpha, " ", "\\ ");
+}
 
-    out = findAndReplace(out, "FILE.PATH0", filepath);
-    out = findAndReplace(out, "FILE.NAME0", filename);
+string formatCommandString(string prime, vector<ArgValue*> nameFilters, 
+    vector<ArgValue*> pathFilters, string filepath, string filename){////HERE
+    string out = prime;
+    string temp = "";
+    while(!(temp == out)){
+        temp = out;
+        out = findAndReplace(out, "FILE.PATH0", filepath);
+    }
+    
+    temp = "";
+    while(!(temp == out)){
+        temp = out;
+        out = findAndReplace(out, "FILE.NAME0", filename);
+    }
+    
 
     for (ArgValue* path : pathFilters){
         //path->printOut();
         string outCheck = findAndReplace(out, path->index, path->value + filepath);
         if (out == outCheck){
-            //cout << path->index << " is not specified in the command string";
+            cout << path->index << " is not specified in the command string" << "\n";
             return "ERROR";
         }
         out = outCheck;
     }
-
     for (ArgValue* name : nameFilters){
         //cout << "here: ";
         //name->printOut();
         string outCheck = findAndReplace(out, name->index, wildcardHandling(name->value, filename));
         if (out == outCheck){
-            //cout << name->index << " is not specified in the command string";
+            cout << name->index << " is not specified in the command string" << "\n";
             return "ERROR";
         }
         out = outCheck;
     }
-    
+
+    /*string test = "cp -v FILEPATHBEGINFILE.PATH0/FILE.NAME0FILEPATHEND FILE.PATH1/FILE.NAME1";
+    test.find("FILEPATHBEGIN"), test.find("FILEPATHEND");*/
+
     return out;
 }
 
+void executeCommand(fs::path workingPath, string filter, bool IgnoreHidden, 
+    string command, vector<ArgValue*> nameFilters, vector<ArgValue*> pathFilters, bool runOnDir){
+    string commandString;
 
+    for(auto entry = fs::recursive_directory_iterator(workingPath); 
+    entry != fs::recursive_directory_iterator(); ++entry ) {
+        const string filename = entry->path().filename().string();
+        string filepath = entry->path().string();
 
+        //edit name out of path
+        filepath = filepath.substr(0,filepath.size() - filename.size()-1);
+
+        //skip if dot file
+        if(IgnoreHidden){
+            if(filename.at(0) == '.'){
+                continue;
+            }
+        }
+
+        //Node* file;
+        bool isDir = false;
+        //check if directory for tree
+        if (entry->is_directory()) {
+            isDir = true;
+        }
+        if (!wildcardMatching(filename, filter) && !isDir){
+            continue;
+        }
+        if (!(!runOnDir && isDir)){
+            commandString = formatCommandString(command, nameFilters, pathFilters,
+                 handleSpaces(filepath), handleSpaces(filename));
+            
+            //exit if commandstring has an error
+            if (commandString == "ERROR")
+                return;
+            cout << "\nrunning command: "<<commandString << "\n";
+            system(commandString.c_str());
+            cout << endl;
+        }
+
+    }
+}
 
 
 
@@ -248,76 +319,98 @@ int main(int argc, char* argv[]) {
         vector<ArgValue*> nameFilters;
         vector<ArgValue*> pathFilters;
         string filter = "*";
+        bool warn = true;
+        bool ignoreHidden = true;
+        bool runOnDir = false;
+        fs::path workingPath = fs::current_path();
 
         //Sort Arguments
-        /*Display all args for testing purposes for (int i = 0; i < argc; ++i){
+        //Display all args for testing purposes 
+        /*for (int i = 0; i < argc; ++i){
             string arg(argv[i]);
             cout << argv[i] << endl;
         }
-        cout << "\n\n";*/
+        cout << "\n\n";//*/
 
 
         int iterator = 1;
         string arg(argv[iterator]);
         //read options. If options move iterator otherwise first arg is command string
         if (arg.at(0) == '-'){
-            //read options
+            if (!(arg.find("f") == string::npos))
+            {
+                warn = false;
+            }
+            if (!(arg.find("a") == string::npos))
+            {
+                ignoreHidden = false;
+            }
+            if (!(arg.find("d") == string::npos))
+            {
+                runOnDir = true;
+            }
+
             iterator++;
         }
 
         string commandString(argv[iterator]); iterator++;
-
-        //check to see if path specifiyed
-        arg = argv[iterator];
-        arg = arg.substr(0,4);
-        fs::path workingPath = fs::current_path();
-
-        //if the next argument isn't a PATHx or NAMEx argument it must be the directory
-        //if not the workingPath is the current path
-        if (!(arg == "PATH") && !(arg == "NAME")){
+        //after the commandString no arguments are 100% required in all 
+        //cases so we skip some code to avoid a seg fault
+        if (!(iterator == argc)){
+            //check to see if path specifiyed
             arg = argv[iterator];
-            workingPath = arg; iterator++;
-        }
+            arg = arg.substr(0,4);
 
-        //Sort Args between names and paths
-        for (int i = iterator; i < argc; ++i){
-            string arg(argv[i]);
-            if (arg.substr(0,4) == "PATH"){
-                ArgValue* path = parseValueFromArg(arg);
-                pathFilters.push_back(path);
+            //if the next argument isn't a PATHx or NAMEx or empty argument it must be the directory
+            //if not the workingPath is the current path
+            if (!(arg == "PATH") && !(arg == "NAME")){
+                arg = argv[iterator];
+                workingPath = arg; iterator++;
             }
-            if (arg.substr(0,4) == "NAME"){
-                ArgValue* name = parseValueFromArg(arg);
-                if (name->index == "FILE.NAME0"){
-                    filter = name->value;
-                    continue; 
-                }  
-                nameFilters.push_back(name);
-            }
-        }
-        cout << "PATHS:\n";
-        for (ArgValue* temp : pathFilters){
-            temp->printOut();
-        }
-        cout << "NAMES:\n";
-        for (ArgValue* temp : nameFilters){
-            temp->printOut();
-        }
 
-        //cout << formatCommandString(commandString, nameFilters, pathFilters) << endl;// check for if command string returns "ERROR"
-        //const fs::path workingPath{ argc >= 2 ? argv[1] : fs::current_path() };
-        //readDirectory(workingPath, filter, true);
-        cout << "Would you like to run the command on all these files? y/n: ";
-        string yN;
-        cin >> yN;
-        cout << "\n";
-        transform(yN.begin(), yN.end(), yN.begin(), ::tolower);
-        if (!(yN == "y")){
-            cout << "Command Aborted" << endl;
-            return -1;
+            //Sort Args between names and paths
+            for (int i = iterator; i < argc; ++i){
+                string arg(argv[i]);
+                if (arg.substr(0,4) == "PATH"){
+                    ArgValue* path = parseValueFromArg(arg);
+                    pathFilters.push_back(path);
+                }
+                if (arg.substr(0,4) == "NAME"){
+                    ArgValue* name = parseValueFromArg(arg);
+                    if (name->index == "FILE.NAME0"){
+                        filter = name->value;
+                        continue; 
+                    }  
+                    nameFilters.push_back(name);
+                }
+            }
+
+            //debug printout vectors
+            /*cout << "PATHS:\n";
+            for (ArgValue* temp : pathFilters){
+                temp->printOut();
+            }
+            cout << "NAMES:\n";
+            for (ArgValue* temp : nameFilters){
+                temp->printOut();
+            }//*/
         }
-        cout << formatCommandString(commandString, nameFilters, pathFilters,"Test Dir", "5.txt") << endl;
-        //breth first search in the tree. For each Item run format string with items path and name
+        if (warn){
+            readDirectory(workingPath, filter, ignoreHidden);
+            
+            cout << "Would you like to run the command on all these files? y/n: ";
+            string yN;
+            cin >> yN;
+            cout << "\n";
+            transform(yN.begin(), yN.end(), yN.begin(), ::tolower);
+            if (!(yN == "y")){
+                cout << "Command Aborted" << endl;
+                return -1;
+            }
+        }
+        executeCommand(workingPath, filter, ignoreHidden, commandString, nameFilters, pathFilters, runOnDir);
+        //if string returns error stop running.
+        //bfs in the tree. For each Item run format string with items path and name
 
 
     }

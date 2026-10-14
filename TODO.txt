@@ -47,3 +47,9 @@ Check if NAME0 exists if not NAME0 = *
 Foramt Command String Error Checking -
 
 BFS then exicute command
+
+
+../rECR "cp -v FILE.PATH0/FILE.NAME0 FILE.PATH0/FILE.NAME1" NAME0="*.txt"  NAME1="moved*"
+../rECR "cp -v FILE.PATH0/FILE.NAME0 FILE.PATH0/FILE.NAME1" NAME0="*.sh"  NAME1="moved*"
+../rECR "cat FILE.PATH0/FILE.NAME0" NAME0="*.sh"
+../rECR "cat FILE.PATH0/FILE.NAME0 \| grep ex" deal with quotes in command
