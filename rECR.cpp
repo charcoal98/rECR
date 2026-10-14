@@ -206,14 +206,12 @@ string handleSpaces(string alpha){
     string out = alpha;
     while(!(temp == out)){
         temp = out;
-        out = findAndReplace(out, " ", "☺");//ascii smilly face doesn't break c++ (SWIFT emoji vars)
-        cout << out << endl;
+        out = findAndReplace(out, " ", "☺");//ascii smilly face doesn't break c++ (SWIFT emoji vars arn't so special) I'm using it since It probably won't appear in the string
     }
     temp = "";
     while(!(temp == out)){
         temp = out;
         out = findAndReplace(out, "☺", "\\ ");
-        cout << out << endl;
     }
     return out;
 }
