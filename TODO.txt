@@ -44,4 +44,6 @@ Check if NAME0 exists if not NAME0 = *
 
 
 
-Foramt Command String Error Checking
+Foramt Command String Error Checking -
+
+BFS then exicute command
