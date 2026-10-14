@@ -3,10 +3,8 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <queue>
-#include <sys/stat.h>
 #include <bits/stdc++.h>
-
+//https://xkcd.com/1513/ I'm sorry this can definatly be cleaned up
 using namespace std;
 namespace fs = filesystem;
 
@@ -64,47 +62,30 @@ class ArgValue {
         }
 };
 
-//See if directory exists if not create it
-void handleDirectory(string dir){
-    struct stat blank;
-    cout << "ran"<<endl;
-    if (!(stat(dir.c_str(), &blank) == 0)){
-        cout << "no dir"<<endl;
-        if (mkdir(dir.c_str(), 0777) == -1)
-            cerr << "Error :  " << strerror(errno) << endl;
-    }
-}
-
-bool wildcardMatching(string txt, string pat){
-    int n = txt.size();
-    int m = pat.size();
+bool wildcardMatching(string alpha, string filter){
+    int alphaSize = alpha.size();
+    int filterSize = filter.size();
     int i = 0, j = 0, startIndex = -1, match = 0;
-    while (i < n) {
-        if (j < m && (pat[j] == '?' || pat[j] == txt[i])) {          
+    while (i < alphaSize) {
+        if (j < filterSize && (filter[j] == '?' || filter[j] == alpha[i])) {          
             i++;
             j++;
-        }
-        
-        else if (j < m && pat[j] == '*') {
+        } else if (j < filterSize && filter[j] == '*') {
             startIndex = j;
             match = i;
             j++;
-        }
-      
-        else if (startIndex != -1) {
+        } else if (startIndex != -1) {
             j = startIndex + 1;
             match++;
             i = match;
-        }
-        
-        else {
+        } else {
             return false;
         }
     }
-    while (j < m && pat[j] == '*') {
+    while (j < filterSize && filter[j] == '*') {
         j++;
     }
-    return j == m;
+    return j == filterSize;
 }
 
 void readDirectory(fs::path workingPath, string filter, bool IgnoreHidden){
@@ -244,8 +225,7 @@ string formatCommandString(string prime, vector<ArgValue*> nameFilters,
         //path->printOut();
         string outCheck = findAndReplace(out, path->index, path->value + filepath);
         if (out == outCheck){
-            cout << path->index << " is not specified in the command string" << "\n";
-            return "ERROR";
+            throw runtime_error(path->index + " is not specified in the command string");
         }
         out = outCheck;
     }
@@ -254,8 +234,7 @@ string formatCommandString(string prime, vector<ArgValue*> nameFilters,
         //name->printOut();
         string outCheck = findAndReplace(out, name->index, wildcardHandling(name->value, filename));
         if (out == outCheck){
-            cout << name->index << " is not specified in the command string" << "\n";
-            return "ERROR";
+            throw runtime_error(name->index + " is not specified in the command string");
         }
         out = outCheck;
     }
@@ -323,7 +302,9 @@ int main(int argc, char* argv[]) {
         bool ignoreHidden = true;
         bool runOnDir = false;
         fs::path workingPath = fs::current_path();
-
+        if(argc == 1){
+            throw runtime_error("No Arguments or Command String");
+        }
         //Sort Arguments
         //Display all args for testing purposes 
         /*for (int i = 0; i < argc; ++i){
@@ -409,10 +390,6 @@ int main(int argc, char* argv[]) {
             }
         }
         executeCommand(workingPath, filter, ignoreHidden, commandString, nameFilters, pathFilters, runOnDir);
-        //if string returns error stop running.
-        //bfs in the tree. For each Item run format string with items path and name
-
-
     }
     catch (const fs::filesystem_error& err) {
         cerr << "filesystem error! " << err.what() << endl;
@@ -425,7 +402,3 @@ int main(int argc, char* argv[]) {
         cerr << "general exception: " << ex.what() << endl;
     }
 }
-
-
-
-//Remember the replace() function for strings

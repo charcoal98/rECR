@@ -52,4 +52,5 @@ BFS then exicute command
 ../rECR "cp -v FILE.PATH0/FILE.NAME0 FILE.PATH0/FILE.NAME1" NAME0="*.txt"  NAME1="moved*"
 ../rECR "cp -v FILE.PATH0/FILE.NAME0 FILE.PATH0/FILE.NAME1" NAME0="*.sh"  NAME1="moved*"
 ../rECR "cat FILE.PATH0/FILE.NAME0" NAME0="*.sh"
-../rECR "cat FILE.PATH0/FILE.NAME0 \| grep ex" deal with quotes in command
+../rECR -f "cat FILE.PATH0/FILE.NAME0 " | grep -i "lorem"
+../rECR -d "echo FILE.PATH0/FILE.NAME0"
