@@ -209,12 +209,14 @@ string formatCommandString(string prime, vector<ArgValue*> nameFilters,
     vector<ArgValue*> pathFilters, string filepath, string filename){////HERE
     string out = prime;
     string temp = "";
+    //replace all instances of FILE.PATH0 in commandString
     while(!(temp == out)){
         temp = out;
         out = findAndReplace(out, "FILE.PATH0", filepath);
     }
     
     temp = "";
+    //replace all instances of FILE.NAME0 in commandString
     while(!(temp == out)){
         temp = out;
         out = findAndReplace(out, "FILE.NAME0", filename);
@@ -222,7 +224,6 @@ string formatCommandString(string prime, vector<ArgValue*> nameFilters,
     
 
     for (ArgValue* path : pathFilters){
-        //path->printOut();
         string outCheck = findAndReplace(out, path->index, path->value + filepath);
         if (out == outCheck){
             throw runtime_error(path->index + " is not specified in the command string");
@@ -230,17 +231,12 @@ string formatCommandString(string prime, vector<ArgValue*> nameFilters,
         out = outCheck;
     }
     for (ArgValue* name : nameFilters){
-        //cout << "here: ";
-        //name->printOut();
         string outCheck = findAndReplace(out, name->index, wildcardHandling(name->value, filename));
         if (out == outCheck){
             throw runtime_error(name->index + " is not specified in the command string");
         }
         out = outCheck;
     }
-
-    /*string test = "cp -v FILEPATHBEGINFILE.PATH0/FILE.NAME0FILEPATHEND FILE.PATH1/FILE.NAME1";
-    test.find("FILEPATHBEGIN"), test.find("FILEPATHEND");*/
 
     return out;
 }
@@ -319,18 +315,14 @@ int main(int argc, char* argv[]) {
         //read options. If options move iterator otherwise first arg is command string
         if (arg.at(0) == '-'){
             if (!(arg.find("f") == string::npos))
-            {
                 warn = false;
-            }
+            
             if (!(arg.find("a") == string::npos))
-            {
                 ignoreHidden = false;
-            }
+            
             if (!(arg.find("d") == string::npos))
-            {
                 runOnDir = true;
-            }
-
+                
             iterator++;
         }
 
