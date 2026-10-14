@@ -202,7 +202,20 @@ string findAndReplace(string prime, string filter, string replacement){
 }
 
 string handleSpaces(string alpha){
-    return findAndReplace(alpha, " ", "\\ ");
+    string temp = "";
+    string out = alpha;
+    while(!(temp == out)){
+        temp = out;
+        out = findAndReplace(out, " ", "☺");//ascii smilly face doesn't break c++ (SWIFT emoji vars)
+        cout << out << endl;
+    }
+    temp = "";
+    while(!(temp == out)){
+        temp = out;
+        out = findAndReplace(out, "☺", "\\ ");
+        cout << out << endl;
+    }
+    return out;
 }
 
 string formatCommandString(string prime, vector<ArgValue*> nameFilters, 
@@ -322,7 +335,7 @@ int main(int argc, char* argv[]) {
             
             if (!(arg.find("d") == string::npos))
                 runOnDir = true;
-                
+
             iterator++;
         }
 
@@ -369,6 +382,7 @@ int main(int argc, char* argv[]) {
             }//*/
         }
         if (warn){
+            cout << "WARNING YOU ARE RESPONSIBLE FOR KNOWING HOW THE COMMAND THAT YOU WANT TO RUN RECURSIVLY WORKS!!!\nFiles & Directories to be affected: \n";
             readDirectory(workingPath, filter, ignoreHidden);
             
             cout << "Would you like to run the command on all these files? y/n: ";
